@@ -27,35 +27,45 @@ keywordList3ARRAY = []
 keywordINTERSECT = []
 
 path = 'C:/Users/Mohammed Hager/Documents/Python_Analytics/dataset'
+dups = []
+def readDups():
+    f = open("dedup.txt", "r")
+    for line in f.readlines():
+        dups.append(line)
+    f.close()
 
 def createFiles():
-    f = open("from.csv", "w")
-    f.close()
+    # f = open("from.csv", "w")
+    # f.close()
 
-    f = open("to.csv", "w")
-    f.close()
+    # f = open("to.csv", "w")
+    # f.close()
 
-    f = open("global_keyword.csv", "w")
-    f.close()
+    # f = open("global_keyword.csv", "w")
+    # f.close()
 
-    f = open("individual_keyword.csv", "w")
-    f.close()
+    # f = open("individual_keyword.csv", "w")
+    # f.close()
 
-    f = open("sentinment.csv", "w")
-    f.close()
+    # f = open("sentinment.csv", "w")
+    # f.close()
 
-    f = open("keyword1.csv", "w")
-    f.close()
+    # f = open("keyword1.csv", "w")
+    # f.close()
 
-    f = open("keyword2.csv", "w")
-    f.close()
+    # f = open("keyword2.csv", "w")
+    # f.close()
 
-    f = open("keyword3.csv", "w")
-    f.close()
+    # f = open("keyword3.csv", "w")
+    # f.close()
 
-    f = open("intersect.csv", "w")
+    # f = open("intersect.csv", "w")
+    # f.close()
+    f = open("keyword_combine.csv", "w")
     f.close()
-
+    f = open("keywords_flagged_emails.json", "w")
+    f.close()
+    
 def addFrom(json_data):
     if 'from' in json_data['headers']:       
         if json_data['headers']['from'] in from_dict:
@@ -115,22 +125,22 @@ def sentiment_analysis(text, name):
         else:
             sentiment_Dict[name] = {"pos":0,"neg":0}
 
-arr1 = ["special purpose entity", "chewco", "whitewing", "ljm", "ljm1", "ljm2", "raptor", "transfer", "offshore", "losses"]
+arr1 = ["special","purpose", "entity", "chewco", "whitewing", "ljm", "ljm1", "ljm2", "raptor", "transfer", "offshore", "losses", "accounting", "fix", "adjustment", "conceal", "hide", "cover", "up", "trouble","shit", "fuck", "destroy", "upset", "angry", "idiot", "wtf", "fire"]
+
 masterLIST1 = []
-def keywordList1(data, emailID, priority, From):
+def keywordList(data, emailID, From):
     data = [x.lower() for x in data]
-    found = set(arr1).intersection(set(data))
-    master = str(emailID)
+    found = set(arr1).intersection(set(data)) 
+    master = str(emailID)+","+str(From)
     if found:
         masterLIST1.append(str(emailID))
+        master += ","+ str(len(found))
         for x in found:
             master += ","+str(x)
-        master+=","+str(priority)+","+str(From)
         keywordList1ARRAY.append(master)
 
-arr2 = ["accounting", "fix", "adjustment", "conceal", "hide", "cover up", "trouble"]
 masterLIST2 = []
-def keywordList2(data, emailID, priority, From):
+def keywordList2(data, emailID, From):
     data = [x.lower() for x in data]
     found = set(arr2).intersection(set(data))
     master = str(emailID)
@@ -138,12 +148,11 @@ def keywordList2(data, emailID, priority, From):
         masterLIST2.append(str(emailID))
         for x in found:
             master += ","+str(x)
-        master+=","+str(priority)+","+str(From)
+        master+=","+str(From)
         keywordList2ARRAY.append(master)
 
-arr3 = ["shit", "fuck", "destroy", "upset", "angry", "idiot", "wtf", "fire"]
 masterLIST3 = []
-def keywordList3(data, emailID, priority, From):
+def keywordList3(data, emailID, From):
     data = [x.lower() for x in data]
     found = set(arr3).intersection(set(data))
     master = str(emailID)
@@ -151,78 +160,130 @@ def keywordList3(data, emailID, priority, From):
         masterLIST3.append(str(emailID))
         for x in found:
             master += ","+str(x)
-        master+=","+str(priority)+","+str(From)
+        master+=","+str(From)
         keywordList3ARRAY.append(master)
 
 def intersect():
     result = set(masterLIST1) & set(masterLIST2) & set(masterLIST3)
     return result
 
-for filename in glob.glob(os.path.join(path, '*.json')):    
-    with open(filename, encoding='utf-8', mode='r') as currentFile:
-        print(counter)
-        counter+=1
-        data=currentFile.read().replace('\n', '')
-        json_data = json.loads(data)
-        addFrom(json_data)
-        addTo(json_data)
-        words= word_tokenize(json_data["text"])
-        useful_words = [word  for word in words if word not in stopwords.words('English')]
-        frequency = nltk.FreqDist(useful_words)
-        globalKeywords(frequency)
-        name = json_data["headers"]["from"]
-        individualKeywords(frequency, name)
-        text = json_data["text"]
-        sentiment_analysis(text, name)
-        keywordList1(frequency.keys(), filename, json_data["priority"], json_data["headers"]["from"])
-        keywordList2(frequency.keys(), filename, json_data["priority"], json_data["headers"]["from"])
-        keywordList3(frequency.keys(), filename, json_data["priority"], json_data["headers"]["from"])
+unique_sent_emails = []
+def dedup():
+    dups =0
+    text = []
+    my_dict = {}
+    for filename in glob.glob(os.path.join(path, '*.json')):    
+        with open(filename, encoding='utf-8', mode='r') as currentFile:
+            data=currentFile.read().replace('\n', '')
+            json_data = json.loads(data)
+            name = json_data["headers"]["from"]
+            date = json_data["text"]
+            if date in text:
+                dups+=1
+                unique_sent_emails.append(filename)
+            else:
+                text.append(date)
+    print(dups)
 
-f = open("keyword1.csv", "a")
-for x in keywordList1ARRAY:
-    f.write(x+"\n")
-f.close()
+def main():   
+    for filename in glob.glob(os.path.join(path, '*.json')):    
+        if filename in dups:
+            pass 
+        else:
+            with open(filename, encoding='utf-8', mode='r') as currentFile:
+                data=currentFile.read().replace('\n', '')
+                json_data = json.loads(data)
+                # addFrom(json_data)
+                # addTo(json_data)
+                words= word_tokenize(json_data["text"])
+                useful_words = [word  for word in words if word not in stopwords.words('English')]
+                frequency = nltk.FreqDist(useful_words)
+                # globalKeywords(frequency)
+                name = json_data["headers"]["from"]
+                # individualKeywords(frequency, name)
+                text = json_data["text"]
+                # sentiment_analysis(text, name)
+                keywordList(frequency.keys(), filename, json_data["headers"]["from"])
+                # keywordList2(frequency.keys(), filename, json_data["headers"]["from"])
+                # keywordList3(frequency.keys(), filename, json_data["headers"]["from"])
+    print("done with main")
+    for x in masterLIST1:
+        with open(x, encoding='utf-8', mode='r') as currentFile:
+            data=currentFile.read().replace('\n', '')
+            json_data = json.loads(data)
+            words= word_tokenize(json_data["text"])
+            useful_words = [word  for word in words if word not in stopwords.words('English')]
+            frequency = nltk.FreqDist(useful_words)
+            name = json_data["headers"]["from"]
+            individualKeywords(frequency, name)
+    print("done with master list")
+    for element in indiviualKeyword_dict:
+        temp = dict(sorted(indiviualKeyword_dict[element].items(), key=lambda item: item[1], reverse=True))
+        indiviualKeyword_dict[element] = temp
+    print("done with dictionary")
 
-f = open("keyword2.csv", "a")
-for x in keywordList2ARRAY:
-    f.write(x+"\n")
-f.close()
+# f = open("keyword2.csv", "a")
+# for x in keywordList2ARRAY:
+#     f.write(x+"\n")
+# f.close()
 
-f = open("keyword3.csv", "a")
-for x in keywordList3ARRAY:
-    f.write(x+"\n")
-f.close()
+# f = open("keyword3.csv", "a")
+# for x in keywordList3ARRAY:
+#     f.write(x+"\n")
+# f.close()
 
-with open('from.csv', 'a', newline='') as f:
-    writer = csv.writer(f)
-    for row in from_dict.items():
-        writer.writerow(row)
+# with open('from.csv', 'a', newline='') as f:
+#     writer = csv.writer(f)
+#     for row in from_dict.items():
+#         writer.writerow(row)
 
-with open('to.csv', 'a', newline='') as f:
-    writer = csv.writer(f)
-    for row in to_dict.items():
-        writer.writerow(row)
+# with open('to.csv', 'a', newline='') as f:
+#     writer = csv.writer(f)
+#     for row in to_dict.items():
+#         writer.writerow(row)
 
-with open('global_keyword.csv', 'a', newline='') as f:
-    writer = csv.writer(f)
-    for row in global_dict.items():
-        writer.writerow(row)
+# with open('global_keyword.csv', 'a', newline='') as f:
+#     writer = csv.writer(f)
+#     for row in global_dict.items():
+#         writer.writerow(row)
 
-with open('individual_keyword.csv', 'a', newline='') as f:
-    writer = csv.writer(f)
-    for row in indiviualKeyword_dict.items():
-        writer.writerow(row)
+# with open('individual_keyword.csv', 'a', newline='') as f:
+#     writer = csv.writer(f)
+#     for row in indiviualKeyword_dict.items():
+#         writer.writerow(row)
 
-with open('sentinment.csv', 'a', newline='') as f:
-    writer = csv.writer(f)
-    for row in sentiment_Dict.items():
-        writer.writerow(row)
+# with open('sentinment.csv', 'a', newline='') as f:
+#     writer = csv.writer(f)
+#     for row in sentiment_Dict.items():
+#         writer.writerow(row)
 
-with open('intersect.csv', 'a', newline='') as f:
-    result = intersect()
-    if result:
-        for row in result:
-            f.write(str(row)+"\n")
+# with open('intersect.csv', 'a', newline='') as f:
+#     result = intersect()
+#     if result:
+#         for row in result:
+#             f.write(str(row)+"\n")
+
 
 executionTime = (time.time() - startTime)
 print('Execution time in seconds: ' + str(executionTime))
+#Execution time in seconds: 28631.080872774124
+
+# dedup from date + sender 
+# remove priority 
+# andrew fastow/jeff.skilling@enron.com hits on those emails
+
+#keywords_flagged_emails
+#keyword_combine
+
+if __name__ == "__main__":
+    createFiles()
+    readDups()
+    main()
+    
+    f = open("keyword_combine.csv", "a")
+    for x in keywordList1ARRAY:
+        f.write(x+"\n")
+    f.close()
+
+    with open('keywords_flagged_emails.json', 'a', newline='') as f:
+        json.dump(indiviualKeyword_dict, f)
